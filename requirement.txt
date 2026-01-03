@@ -1,7 +1,0 @@
-flask
-flask-sqlalchemy
-flask-login
-flask-mail
-authlib
-requests
-psycopg2-binary

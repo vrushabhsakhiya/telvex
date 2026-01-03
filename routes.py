@@ -1346,32 +1346,42 @@ def register_routes(app):
     @login_required
     @master_required
     def reset_data():
-        # DANGEROUS: Clear all data except Users and ShopProfile? or just transactional data?
-        # Let's clear transactional data: Orders, Measurements, Customers (maybe?)
-        # User requested "Reset System", usually implies fresh start for testing.
         try:
-            # Delete in order of dependencies
-            db.session.query(Order).delete()
-            db.session.query(Measurement).delete()
-            # db.session.query(Customer).delete() # Keeping customers might be safer? No, usually "Reset" means all.
-            # However, deleting customers might break fk if not careful.
+            # 1. Clear Database Tables (Order Matters for FKs)
+            # Delete History first as it references everything
+            if 'History' in globals():
+                 db.session.query(History).delete()
             
-            # For now, let's keep it safe: Clear Orders and Measurements only?
-            # Or ask user? The user said "Reset System".
-            # Let's clear Orders and Measurements (Transactional). And Customers.
-            # But keep Categories, Users, ShopProfile.
-            
+            # Delete Reminders
             if 'Reminder' in globals():
                  db.session.query(Reminder).delete()
-            
+
+            # Delete Transactional Data
             db.session.query(Order).delete()
             db.session.query(Measurement).delete()
             db.session.query(Customer).delete()
             
             db.session.commit()
-            flash('System Data (Orders, Customers, Measurements) has been reset.', 'warning')
+            
+            # 2. Clear Saved Bills Directory
+            import shutil
+            bills_dir = os.path.join(app.root_path, 'saved_bills')
+            if os.path.exists(bills_dir):
+                # Remove all contents but keep the root folder
+                for filename in os.listdir(bills_dir):
+                    file_path = os.path.join(bills_dir, filename)
+                    try:
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path)
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)
+                    except Exception as e:
+                        print(f'Failed to delete {file_path}. Reason: {e}')
+            
+            flash('System Reset Successful! All Orders, Customers, Measurements, and Files have been cleared.', 'success')
         except Exception as e:
             db.session.rollback()
+            print(f"Reset Error: {e}")
             flash(f'Error resetting data: {str(e)}', 'danger')
         return redirect(url_for('settings'))
 
