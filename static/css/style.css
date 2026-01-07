@@ -449,3 +449,12 @@ body.dark-mode th {
 .sidebar-overlay.active .sidebar-panel {
     transform: translateX(0);
 }
+
+/* Utility Classes */
+.d-none {
+    display: none !important;
+}
+
+.d-block {
+    display: block !important;
+}

@@ -2,6 +2,12 @@ from flask import Flask
 from config import Config
 from models import db
 from routes import register_routes
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+csrf = CSRFProtect()
+limiter = Limiter(key_func=get_remote_address)
 
 def create_app():
     app = Flask(__name__)
@@ -9,6 +15,8 @@ def create_app():
 
     # Initialize Plugins
     db.init_app(app)
+    csrf.init_app(app)
+    limiter.init_app(app)
 
     # --- I18n / Translations ---
     translations = {
@@ -61,7 +69,101 @@ def create_app():
             'worker': 'Worker',
             'delivered': 'Delivered',
             'working': 'Working',
-            'cancelled': 'Cancelled'
+            'cancelled': 'Cancelled',
+            'Monthly Customers':'Monthly Customers',
+            # Custom Categories
+            'category': 'Category',
+            'custom_categories': 'Custom Categories',
+            'manage_categories_info': 'Manage your measurement categories and app preferences.',
+            'gents_wear': "Gent's Wear",
+            'ladies_wear': "Ladies' Wear",
+            'add_category': 'Add Category',
+            'no_gents_items': "No Gent's items added yet. Click \"Add Category\" to start.",
+            'no_ladies_items': "No Ladies' items added yet. Click \"Add Category\" to start.",
+            'add_new_category': 'Add New Category',
+            'category_name': 'Category Name',
+            'category_placeholder': 'e.g. Waistcoat, Blazer',
+            'category_help': 'Name of the clothing item (e.g. Shirt, Pant)',
+            'measurement_fields': 'Measurement Fields',
+            'what_do_you_measure': 'What do you measure?',
+            'part_name_placeholder': 'Part name (e.g. Length)',
+            'add': 'Add',
+            # Bills
+            'bills_and_payments': 'Bills & Payments',
+            'search_name_mobile': 'Search Name or Mobile...',
+            'all_genders': 'All Genders',
+            'balance_all': 'Balance: All',
+            'bill_id': 'Bill ID',
+            'customer': 'Customer',
+            'total_bill': 'Total Bill',
+            'advance_payment': 'Advance Payment',
+            'pending_payment': 'Pending Payment',
+            'payment_status': 'Payment Status',
+            'action': 'Action',
+            'no_bills_found': 'No bills found.',
+            'showing_page': 'Showing page',
+            'go_to': 'Go to',
+            'prev': 'Prev',
+            'next': 'Next',
+            # Customers
+            'add_new_customer': 'Add New Customer',
+            'clothes_status': 'Clothes Status',
+            'no_data_yet': 'No data yet.',
+            # Orders
+            'no_orders_found': 'No orders found.',
+            'no_upcoming_deliveries': 'No upcoming deliveries.',
+            # Measurement History
+            'measurements_history': 'Measurements History',
+            'no_measurements_found': 'No measurements found for this month.',
+            # Dashboard
+            'yearly_overview': 'Yearly Overview',
+            'monthly_report': 'Monthly Report',
+            'monthly_customers': 'Monthly Customers',
+            'monthly_pending': 'Monthly Pending',
+            'monthly_revenue': 'Monthly Revenue',
+            'urgent_reminders': 'Urgent Reminders',
+            'upcoming_deliveries': 'Upcoming Deliveries',
+            'next_7_days': 'Next 7 Days',
+            'top_customers': 'Top Customers',
+            'today_customers': "Today's Customers",
+            'no_orders_today': 'No orders created today.',
+            'view': 'View',
+            'pending_delivery': 'Pending Delivery',
+            'this_month': 'This Month',
+            'total_outstanding': 'Total Outstanding',
+            # Reminders
+            'reminders_activity': 'Reminders & Activity',
+            'urgent_today': 'Urgent / Today',
+            'no_urgent_deliveries': 'No urgent deliveries.',
+            'tomorrow': 'Tomorrow',
+            'due_tomorrow': 'Due: Tomorrow',
+            'no_deliveries_tomorrow': 'No deliveries tomorrow.',
+            'pending_payments': 'Pending Payments',
+            'no_pending_payments': 'No pending payments.',
+            'go_to_bills': 'Go to Bills',
+            'due': 'Due',
+            # Settings
+            'manage_app_prefs': 'Manage your app preferences.',
+            'shop_profile': 'Shop Profile',
+            'shop_logo': 'Shop Logo',
+            'keep_current_logo': 'Leave empty to keep current logo',
+            'delete_current_logo': 'Delete Current Logo',
+            'shop_name': 'Shop Name',
+            'shop_contact_no': 'Shop Contact No.',
+            'gst_reg_no': 'GST / Reg No.',
+            'optional': 'Optional',
+            'address': 'Address',
+            'full_shop_address': 'Full Shop Address',
+            'bill_terms': 'Bill Terms & Conditions',
+            'terms_placeholder': 'Terms printed on bottom of bill...',
+            'save_profile': 'Save Profile',
+            'data_management': 'Data Management',
+            'from_date': 'From Date',
+            'to_date': 'To Date',
+            'data_type': 'Data Type',
+            'download_data': 'Download Data',
+            'reset_system_data': 'Reset System Data',
+            'reset_warning': 'WARNING: This will delete ALL Customers, Orders, and Measurements. This action cannot be undone. Are you sure?'
         },
         'hi': {
             'dashboard': 'डैशबोर्ड',
@@ -79,7 +181,7 @@ def create_app():
             'pending_balance': 'बकाया राशि',
             'due_today': 'आज की डिलीवरी',
             'recent_activity': 'हाल की गतिविधि',
-            'today_customers': 'आज',
+            'today_customers': 'आज के ग्राहक',
             'this_week': 'इस सप्ताह',
             # Common
             'name': 'नाम',
@@ -112,7 +214,101 @@ def create_app():
             'worker': 'कारीगर',
             'delivered': 'डिलीवर किया',
             'working': 'कार्य प्रगति पर',
-            'cancelled': 'रद्द'
+            'cancelled': 'रद्द',
+            'Monthly Customers':'मासिक ग्राहक',
+            # Custom Categories
+            'category': 'श्रेणी',
+            'custom_categories': 'कस्टम श्रेणियां',
+            'manage_categories_info': 'अपनी माप श्रेणियां और ऐप प्राथमिकताएं प्रबंधित करें।',
+            'gents_wear': 'पुरुष परिधान',
+            'ladies_wear': 'महिला परिधान',
+            'add_category': 'श्रेणी जोड़ें',
+            'no_gents_items': 'अभी तक कोई पुरुष आइटम नहीं जोड़ा गया। शुरू करने के लिए "श्रेणी जोड़ें" पर क्लिक करें।',
+            'no_ladies_items': 'अभी तक कोई महिला आइटम नहीं जोड़ा गया। शुरू करने के लिए "श्रेणी जोड़ें" पर क्लिक करें।',
+            'add_new_category': 'नई श्रेणी जोड़ें',
+            'category_name': 'श्रेणी का नाम',
+            'category_placeholder': 'जैसे: वेस्टकोट, ब्लेज़र',
+            'category_help': 'कपड़े का नाम (जैसे: शर्ट, पैंट)',
+            'measurement_fields': 'माप के क्षेत्र',
+            'what_do_you_measure': 'आप क्या मापते हैं?',
+            'part_name_placeholder': 'भाग का नाम (जैसे: लंबाई)',
+            'add': 'जोड़ें',
+            'type_above_enter': 'ऊपर लिखें और एन्टर दबाएं',
+            # Bills
+            'bills_and_payments': 'बिल और भुगतान',
+            'search_name_mobile': 'नाम या मोबाइल खोजें...',
+            'all_genders': 'सभी लिंग',
+            'balance_all': 'बकाया: सभी',
+            'bill_id': 'बिल आईडी',
+            'customer': 'ग्राहक',
+            'total_bill': 'कुल बिल',
+            'advance_payment': 'अग्रिम भुगतान',
+            'pending_payment': 'लंबित भुगतान',
+            'payment_status': 'भुगतान स्थिति',
+            'action': 'क्रिया',
+            'no_bills_found': 'कोई बिल नहीं मिला।',
+            'showing_page': 'पृष्ठ',
+            'go_to': 'पर जाएं',
+            'prev': 'पिछला',
+            'next': 'अगला',
+            # Customers (Extra)
+            'add_new_customer': 'नया ग्राहक जोड़ें',
+            'clothes_status': 'कपड़ों की स्थिति',
+            'no_data_yet': 'अभी कोई डेटा नहीं।',
+            # Orders (Extra)
+            'no_orders_found': 'कोई ऑर्डर नहीं मिला।',
+            'no_upcoming_deliveries': 'कोई आगामी डिलीवरी नहीं।',
+             # Measurement History
+            'measurements_history': 'माप इतिहास',
+            'no_measurements_found': 'इस महीने कोई माप नहीं मिला।',
+             # Dashboard
+            'yearly_overview': 'वार्षिक अवलोकन',
+            'monthly_report': 'मासिक रिपोर्ट',
+            'monthly_customers': 'मासिक ग्राहक',
+            'monthly_pending': 'मासिक बकाया',
+            'monthly_revenue': 'मासिक राजस्व',
+            'urgent_reminders': 'जरूरी रिमाइंडर',
+            'upcoming_deliveries': 'आगामी डिलीवरी',
+            'next_7_days': 'अगले 7 दिन',
+            'top_customers': 'शीर्ष ग्राहक',
+            'no_orders_today': 'आज कोई ऑर्डर नहीं बनाया गया।',
+            'view': 'देखें',
+            'pending_delivery': 'लंबित डिलीवरी',
+            'this_month': 'इस महीने',
+            'total_outstanding': 'कुल बकाया',
+            # Reminders
+            'reminders_activity': 'रिमाइंडर और गतिविधि',
+            'urgent_today': 'जरूरी / आज',
+            'no_urgent_deliveries': 'कोई जरूरी डिलीवरी नहीं।',
+            'tomorrow': 'कल',
+            'due_tomorrow': 'देय: कल',
+            'no_deliveries_tomorrow': 'कल कोई डिलीवरी नहीं।',
+            'pending_payments': 'लंबित भुगतान',
+            'no_pending_payments': 'कोई लंबित भुगतान नहीं।',
+            'go_to_bills': 'बिल पर जाएं',
+            'due': 'देय',
+            # Settings
+            'manage_app_prefs': 'अपनी ऐप प्राथमिकताएं प्रबंधित करें।',
+            'shop_profile': 'दुकान प्रोफ़ाइल',
+            'shop_logo': 'दुकान का लोगो',
+            'keep_current_logo': 'वर्तमान लोगो रखने के लिए खाली छोड़ दें',
+            'delete_current_logo': 'वर्तमान लोगो हटाएं',
+            'shop_name': 'दुकान का नाम',
+            'shop_contact_no': 'दुकान संपर्क नंबर',
+            'gst_reg_no': 'जीएसटी / पंजीकरण संख्या',
+            'optional': 'वैकल्पिक',
+            'address': 'पता',
+            'full_shop_address': 'पुर्ण दुकान का पता',
+            'bill_terms': 'बिल नियम और शर्तें',
+            'terms_placeholder': 'बिल के नीचे मुद्रित शर्तें...',
+            'save_profile': 'प्रोफ़ाइल सहेजें',
+            'data_management': 'डेटा प्रबंधन',
+            'from_date': 'दिनांक से',
+            'to_date': 'दिनांक तक',
+            'data_type': 'डेटा प्रकार',
+            'download_data': 'डेटा डाउनलोड करें',
+            'reset_system_data': 'सिस्टम डेटा रीसेट करें',
+            'reset_warning': 'चेतावनी: यह सभी ग्राहकों, ऑर्डर और माप को हटा देगा। यह क्रिया पूर्ववत नहीं की जा सकती। क्या आप सुनिश्चित हैं?'
         },
         'gu': {
             'dashboard': 'ડેશબોર્ડ',
@@ -130,7 +326,7 @@ def create_app():
             'pending_balance': 'બાકી રકમ',
             'due_today': 'આજે આપવાનાં',
             'recent_activity': 'તાજેતરની પ્રવૃત્તિ',
-            'today_customers': 'આજે',
+            'today_customers': 'આજના ગ્રાહકો',
             'this_week': 'આ અઠવાડિયે',
             # Common
             'name': 'નામ',
@@ -163,35 +359,154 @@ def create_app():
             'worker': 'કારીગર',
             'delivered': 'ડિલિવર થયું',
             'working': 'કામ ચાલુ',
-            'cancelled': 'રદ થયેલ'
+            'cancelled': 'રદ થયેલ',
+            'Monthly Customers':'માસિક ગ્રાહક',
+            # Custom Categories
+            'category': 'શ્રેણી',
+            'custom_categories': 'કસ્ટમ શ્રેણીઓ',
+            'manage_categories_info': 'તમારી માપ શ્રેણીઓ અને એપ્લિકેશન પસંદગીઓનું સંચાલન કરો.',
+            'gents_wear': 'જેન્ટ્સ વેર',
+            'ladies_wear': 'લેડીઝ વેર',
+            'add_category': 'શ્રેણી ઉમેરો',
+            'no_gents_items': 'હજી સુધી કોઈ જેન્ટ્સ આઈટમ ઉમેરવામાં આવી નથી. શરૂ કરવા માટે "શ્રેણી ઉમેરો" પર ક્લિક કરો.',
+            'no_ladies_items': 'હજી સુધી કોઈ લેડીઝ આઈટમ ઉમેરવામાં આવી નથી. શરૂ કરવા માટે "શ્રેણી ઉમેરો" પર ક્લિક કરો.',
+            'add_new_category': 'નવી શ્રેણી ઉમેરો',
+            'category_name': 'શ્રેણીનું નામ',
+            'category_placeholder': 'દા.ત. વેસ્ટકોટ, બ્લેઝર',
+            'category_help': 'કપડાંનું નામ (દા.ત. શર્ટ, પેન્ટ)',
+            'measurement_fields': 'માપન ક્ષેત્રો',
+            'what_do_you_measure': 'તમે શું માપો છો?',
+            'part_name_placeholder': 'ભાગનું નામ (દા.ત. લંબાઈ)',
+            'add': 'ઉમેરો',
+            'type_above_enter': 'ઉપર લખો અને એન્ટર દબાવો',
+            # Bills
+            'bills_and_payments': 'બિલ અને ચૂકવણી',
+            'search_name_mobile': 'નામ અથવા મોબાઇલ શોધો...',
+            'all_genders': 'બધા લિંગ',
+            'balance_all': 'બાકી: બધા',
+            'bill_id': 'બિલ આઈડી',
+            'customer': 'ગ્રાહક',
+            'total_bill': 'કુલ બિલ',
+            'advance_payment': 'અગાઉથી ચૂકવણી',
+            'pending_payment': 'બાકી ચૂકવણી',
+            'payment_status': 'ચુકવણી સ્થિતિ',
+            'action': 'ક્રિયા',
+            'no_bills_found': 'કોઈ બિલ મળ્યા નથી.',
+            'showing_page': 'પૃષ્ઠ',
+            'go_to': 'પર જાઓ',
+            'prev': 'પાછળ',
+            'next': 'આગળ',
+            # Customers (Extra)
+            'add_new_customer': 'નવો ગ્રાહક ઉમેરો',
+            'clothes_status': 'કપડાંની સ્થિતિ',
+            'no_data_yet': 'હજુ સુધી કોઈ ડેટા નથી.',
+            # Orders (Extra)
+            'no_orders_found': 'કોઈ ઓર્ડર મળ્યા નથી.',
+            'no_upcoming_deliveries': 'કોઈ આગામી ડિલિવરી નથી.',
+             # Measurement History
+            'measurements_history': 'માપનો ઇતિહાસ',
+            'no_measurements_found': 'આ મહિના માટે કોઈ માપ મળ્યા નથી.',
+             # Dashboard
+            'yearly_overview': 'વાર્ષિક વિહંગાવલોકન',
+            'monthly_report': 'માસિક અહેવાલ',
+            'monthly_customers': 'માસિક ગ્રાહકો',
+            'monthly_pending': 'માસિક બાકી',
+            'monthly_revenue': 'માસિક આવક',
+            'urgent_reminders': 'તાત્કાલિક રિમાઇન્ડર્સ',
+            'upcoming_deliveries': 'આગામી ડિલિવરી',
+            'next_7_days': 'આગામી 7 દિવસ',
+            'top_customers': 'ટોચના ગ્રાહકો',
+            'today_customers': 'આજના ગ્રાહકો',
+            'no_orders_today': 'આજે કોઈ ઓર્ડર બનાવ્યો નથી.',
+            'view': 'જુઓ',
+            'pending_delivery': 'બાકી ડિલિવરી',
+            'this_month': 'આ મહિને',
+            'total_outstanding': 'કુલ બાકી',
+             # Reminders
+            'reminders_activity': 'રિમાઇન્ડર અને પ્રવૃત્તિ',
+            'urgent_today': 'તાત્કાલિક / આજે',
+            'no_urgent_deliveries': 'કોઈ તાત્કાલિક ડિલિવરી નથી.',
+            'tomorrow': 'આવતીકાલે',
+            'due_tomorrow': 'બાકી: આવતીકાલે',
+            'no_deliveries_tomorrow': 'આવતીકાલે કોઈ ડિલિવરી નથી.',
+            'pending_payments': 'બાકી ચૂકવણી',
+            'no_pending_payments': 'કોઈ ચૂકવણી બાકી નથી.',
+            'go_to_bills': 'બીલ પર જાઓ',
+            'due': 'બાકી',
+            # Settings
+            'manage_app_prefs': 'તમારી એપ્લિકેશન પસંદગીઓનું મેનેજ કરો.',
+            'shop_profile': 'દુકાન પ્રોફાઇલ',
+            'shop_logo': 'દુકાનનો લોગો',
+            'keep_current_logo': 'વર્તમાન લોગો રાખવા માટે ખાલી છોડો',
+            'delete_current_logo': 'વર્તમાન લોગો કાઢી નાખો',
+            'shop_name': 'દુકાનનું નામ',
+            'shop_contact_no': 'દુકાન સંપર્ક નંબર',
+            'gst_reg_no': 'જીએસટી / નોંધણી નંબર',
+            'optional': 'વૈકલ્પિક',
+            'address': 'સરનામું',
+            'full_shop_address': 'દુકાનનું પૂરું સરનામું',
+            'bill_terms': 'બિલના નિયમો અને શરતો',
+            'terms_placeholder': 'બિલની નીચે છપાયેલી શરતો...',
+            'save_profile': 'પ્રોફાઇલ સાચવો',
+            'data_management': 'ડેટા મેનેજમેન્ટ',
+            'from_date': 'તારીખથી',
+            'to_date': 'તારીખ સુધી',
+            'data_type': 'ડેટા પ્રકાર',
+            'download_data': 'ડેટા ડાઉનલોડ કરો',
+            'reset_system_data': 'સિસ્ટમ ડેટા રીસેટ કરો',
+            'reset_warning': 'ચેતવણી: આ તમામ ગ્રાહકો, ઓર્ડર અને માપને કાઢી નાખશે. આ ક્રિયા રદ કરી શકાતી નથી. શું તમને ખાતરી છે?'
         }
     }
 
     @app.context_processor
     def inject_i18n():
         from flask import session, request
+        try:
+            from googletrans import Translator
+            translator = Translator()
+        except ImportError:
+            translator = None
+            print("!!! Googletrans not installed")
+
         # Get lang from Query or Session, default 'en'
         lang = request.args.get('lang', session.get('lang', 'en'))
         session['lang'] = lang # Persist
         
         def t(key):
-            return translations.get(lang, translations['en']).get(key, key)
+            # 1. Check if key exists in Target Language Dict
+            if key in translations.get(lang, {}):
+                return translations[lang][key]
+            
+            # 2. If 'en' (default), just return the key (assuming key is the English text)
+            # OR if key is in 'en' dict, return that value
+            en_val = translations['en'].get(key, key)
+            
+            if lang == 'en':
+                return en_val
+
+            # 3. If missing in Target Lang, try Google Translate (Dynamic Fallback)
+            if translator:
+                try:
+                    # Check if we already cached this dynamic translation in memory
+                    if key not in translations[lang]:
+                         # Translate from English (en_val) to Target (lang)
+                        translated = translator.translate(en_val, dest=lang).text
+                        # Cache it so we don't hit API again this session
+                        translations[lang][key] = translated
+                        print(f"Translated '{en_val}' to {lang}: {translated}")
+                    
+                    return translations[lang][key]
+                except Exception as e:
+                    print(f"Translation Error for {key}: {e}")
+                    return en_val # Fallback to English
+            
+            return en_val
         
         return dict(t=t, current_lang=lang)
     
     from models import mail
     mail.init_app(app)
     
-    from flask_login import LoginManager
-    login_manager = LoginManager()
-    login_manager.login_view = 'login'
-    login_manager.init_app(app)
-    
-    from models import User
-    @login_manager.user_loader
-    def load_user(user_id):
-        return User.query.get(int(user_id))
-
     # Register Routes
     with app.app_context():
         register_routes(app)
@@ -200,7 +515,7 @@ def create_app():
         db.create_all()
         
         # --- Seed Data ---
-        from models import Category, User
+        from models import Category
         if not Category.query.first():
             print("Seeding Categories...")
             categories = [
@@ -213,19 +528,7 @@ def create_app():
             ]
             db.session.bulk_save_objects(categories)
             db.session.commit()
-            
-        if not User.query.filter_by(username='admin').first():
-            # In production use hashed passwords!
-            master = User(username='admin', role='master')
-            master.set_password('admin123')
-            db.session.add(master)
-            db.session.commit()
 
-        if not User.query.filter_by(username='staff').first():
-            staff = User(username='staff', role='staff')
-            staff.set_password('staff123')
-            db.session.add(staff)
-            db.session.commit()
 
     return app
 

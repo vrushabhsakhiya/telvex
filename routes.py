@@ -1,375 +1,43 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify, make_response
-from models import db, Customer, Category, Measurement, Order, User, ShopProfile, mail, History, Reminder
-from flask_login import login_user, logout_user, login_required, current_user
-from functools import wraps
+from models import db, Customer, Category, Measurement, Order, ShopProfile, mail, Reminder
 from werkzeug.utils import secure_filename
 import os
 import random
 import string
-import hmac
-import hashlib
 from datetime import datetime, timedelta
 from flask_mail import Message
-
-def master_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != 'master':
-            flash('You do not have permission to access this page.', 'danger')
-            return redirect(url_for('dashboard'))
-        return f(*args, **kwargs)
-    return decorated_function
+import hmac
+import hashlib
 
 def register_routes(app):
     
-    # Context Processor to inject current year/settings globally if needed
+    # Context Processor to inject shop settings globally
     @app.context_processor
     def inject_defaults():
         try:
             from models import ShopProfile
             shop = ShopProfile.query.first() or ShopProfile() # Fallback
-            return dict(active_page='', current_user=current_user, shop=shop)
+            return dict(active_page='', shop=shop)
         except Exception as e:
             print(f"!!! ERROR IN INJECT_DEFAULTS: {e}")
-            return dict(active_page='', current_user=current_user, shop=None)
+            return dict(active_page='', shop=None)
 
-    @app.route('/test')
-    def test_db():
-        try:
-            c = User.query.count()
-            return f"User count: {c}"
-        except Exception as e:
-            return f"DB Error: {e}"
+    from app import limiter 
 
     @app.route('/')
     def index():
-        print(">>> INDEX ROUTE HIT")
-        if current_user.is_authenticated:
-            return redirect(url_for('dashboard'))
-        return redirect(url_for('login'))
+        return redirect(url_for('dashboard'))
 
-    @app.route('/login', methods=['GET', 'POST'])
-    def login():
-        print(">>> LOGIN ROUTE HIT")
-        if current_user.is_authenticated:
-            return redirect(url_for('dashboard'))
-            
-        if request.method == 'POST':
-            username = request.form.get('username')
-            password = request.form.get('password')
-            
-            user = User.query.filter_by(username=username).first()
-            
-            if user and user.check_password(password):
-                # CHECK EMAIL VERIFICATION
-                if not user.is_verified:
-                    # Generate OTP and Redirect to Verify
-                    otp = ''.join(random.choices(string.digits, k=6))
-                    print(f"!!! DEBUG OTP: {otp} !!!")
-                    user.reset_otp = otp
-                    user.reset_otp_expiry = datetime.utcnow() + timedelta(minutes=15)
-                    db.session.commit()
-                    
-                    try:
-                        if not user.email:
-                            flash('Account has no email. Contact Admin.', 'error')
-                            return redirect(url_for('login'))
 
-                        msg = Message('Verify Login - Taivex Pro', sender=app.config.get('MAIL_USERNAME'), recipients=[user.email])
-                        msg.body = f"Your verification OTP is: {otp}. It expires in 15 minutes."
-                        mail.send(msg)
-                        
-                        flash('First login requires verification. OTP sent to email.', 'info')
-                        return redirect(url_for('verify_email_otp', email=user.email))
-                    except Exception as e:
-                        print(f"SMTP Error: {e}")
-                        flash(f'Email failed (Dev Mode). Check server console for OTP.', 'warning')
-                        return redirect(url_for('verify_email_otp', email=user.email))
-                
-                # If verified, proceed to login
-                login_user(user)
-                flash(f'Welcome back, {user.username}!', 'success')
-                return redirect(url_for('dashboard'))
-            else:
-                flash('Invalid username or password', 'error')
-        
-        return render_template('login.html')
 
-    @app.route('/logout')
-    @login_required
-    def logout():
-        logout_user()
-        flash('You have been logged out.', 'success')
-        return redirect(url_for('login'))
-
-    @app.route('/history')
-    @login_required
-    def history():
-        if current_user.role != 'master':
-            flash('Access denied. Master only.', 'danger')
-            return redirect(url_for('dashboard'))
-        
-        # Auto-Cleanup: Delete logs older than 6 months (180 days)
-        try:
-            cutoff_date = datetime.utcnow() - timedelta(days=180)
-            deleted_count = History.query.filter(History.timestamp < cutoff_date).delete()
-            if deleted_count > 0:
-                db.session.commit()
-                # print(f"Cleaned up {deleted_count} old history records.")
-        except Exception as e:
-            print(f"History cleanup error: {e}")
-            db.session.rollback()
-
-        # Fetch all history, newest first
-        logs = History.query.order_by(History.timestamp.desc()).all()
-        return render_template('history.html', logs=logs)
-
-    # --- Forgot Password Routes ---
-    @app.route('/forgot-password', methods=['GET', 'POST'])
-    def forgot_password():
-        if request.method == 'POST':
-            email = request.form.get('email')
-            user = User.query.filter_by(email=email).first()
-            if user:
-                # Generate 6-digit OTP
-                otp = ''.join(random.choices(string.digits, k=6))
-                print(f"!!! DEBUG OTP: {otp} !!!")
-                user.reset_otp = otp
-                user.reset_otp_expiry = datetime.utcnow() + timedelta(minutes=15)
-                db.session.commit()
-                
-                try:
-                    msg = Message('Password Reset OTP - Taivex Pro', sender=app.config.get('MAIL_USERNAME'), recipients=[email])
-                    msg.body = f"Your OTP for password reset is: {otp}. It expires in 15 minutes."
-                    mail.send(msg)
-                    flash('OTP sent to your email.', 'success')
-                    return redirect(url_for('verify_otp', email=email))
-                except Exception as e:
-                    print(f"SMTP Error: {e}")
-                    flash(f'Email failed (Dev Mode). Check server console for OTP.', 'warning')
-                    return redirect(url_for('verify_otp', email=email))
-            else:
-                flash('Email not found.', 'error')
-        return render_template('forgot_password.html')
-
-    @app.route('/verify-otp', methods=['GET', 'POST'])
-    def verify_otp():
-        email = request.args.get('email') or request.form.get('email')
-        if not email:
-            return redirect(url_for('forgot_password'))
-
-        if request.method == 'POST':
-            otp = request.form.get('otp')
-            user = User.query.filter_by(email=email).first()
-            if user and user.reset_otp == otp and user.reset_otp_expiry > datetime.utcnow():
-                # Store verified state in session
-                from flask import session 
-                session['reset_verified_email'] = email
-                return redirect(url_for('reset_password'))
-            else:
-                flash('Invalid or expired OTP.', 'error')
-        
-        return render_template('verify_otp.html', email=email)
-
-    import os
-    from authlib.integrations.flask_client import OAuth
-
-    # OAuth Setup
-    oauth = OAuth(app)
-    google = oauth.register(
-        name='google',
-        client_id=os.getenv('GOOGLE_CLIENT_ID', 'YOUR_GOOGLE_CLIENT_ID_HERE'),
-        client_secret=os.getenv('GOOGLE_CLIENT_SECRET', 'YOUR_GOOGLE_CLIENT_SECRET_HERE'),
-        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-        client_kwargs={'scope': 'openid email profile'}
-    )
-
-    @app.route('/google-login')
-    def google_login():
-        redirect_uri = url_for('google_callback', _external=True)
-        return google.authorize_redirect(redirect_uri)
-
-    @app.route('/google-callback')
-    def google_callback():
-        try:
-            token = google.authorize_access_token()
-            user_info = token.get('userinfo')
-            email = user_info.get('email')
-            
-            if not email:
-                flash('Could not retrieve email from Google.', 'error')
-                return redirect(url_for('login'))
-                
-            # Match user by email
-            user = User.query.filter_by(email=email).first()
-            
-            if user:
-                login_user(user)
-                flash(f'Welcome back, {user.username}!', 'success')
-                return redirect(url_for('dashboard'))
-            else:
-                flash('No account found with this Google email.', 'error')
-                return redirect(url_for('login'))
-                
-        except Exception as e:
-            print(f"Google Login Error: {e}")
-            flash('Google Login failed. Please try again.', 'error')
-            return redirect(url_for('login'))
-
-    @app.route('/reset-password', methods=['GET', 'POST'])
-    def reset_password():
-        from flask import session
-        email = session.get('reset_verified_email')
-        if not email:
-            return redirect(url_for('login'))
-        
-        if request.method == 'POST':
-            password = request.form.get('password')
-            user = User.query.filter_by(email=email).first()
-            if user:
-                user.set_password(password)
-                user.reset_otp = None
-                user.reset_otp_expiry = None
-                db.session.commit()
-                session.pop('reset_verified_email', None)
-                flash('Password reset successfully. Please login.', 'success')
-                return redirect(url_for('login'))
-        return render_template('reset_password.html')
-    @app.route('/verify-email-otp', methods=['GET', 'POST'])
-    def verify_email_otp():
-        email = request.args.get('email') or request.form.get('email')
-        if not email:
-            return redirect(url_for('login'))
-
-        if request.method == 'POST':
-            otp = request.form.get('otp')
-            user = User.query.filter_by(email=email).first()
-            
-            if user and user.reset_otp == otp and user.reset_otp_expiry > datetime.utcnow():
-                # Success! verify and login
-                user.is_verified = True
-                user.reset_otp = None
-                user.reset_otp_expiry = None
-                db.session.commit()
-                
-                login_user(user)
-                flash('Email verified! You are now logged in.', 'success')
-                return redirect(url_for('dashboard'))
-            else:
-                flash('Invalid or expired OTP.', 'error')
-        
-        return render_template('verify_otp.html', email=email, mode='verification')
-
-    from functools import wraps
-    
-    def permission_required(perm):
-        def decorator(f):
-            @wraps(f)
-            def decorated_function(*args, **kwargs):
-                if not current_user.has_permission(perm):
-                    flash('You do not have permission to access this resource.', 'error')
-                    return redirect(request.referrer or url_for('dashboard'))
-                return f(*args, **kwargs)
-            return decorated_function
-        return decorator
-
-    # --- User Management (Master Only) ---
-    @app.route('/users')
-    @login_required
-    def users():
-        if current_user.role != 'master':
-             flash('Access denied.', 'error')
-             return redirect(url_for('dashboard'))
-        users_list = User.query.filter(User.role != 'master').all()
-        return render_template('users.html', users=users_list, active_page='users')
-
-    @app.route('/users/create', methods=['POST'])
-    @login_required
-    def create_user():
-        if current_user.role != 'master':
-             return redirect(url_for('dashboard'))
-             
-        username = request.form.get('username')
-        email = request.form.get('email') # New Field
-        password = request.form.get('password')
-        perms = request.form.getlist('permissions') # list of checked perms
-        
-        if not email:
-            flash('Email is required for staff accounts.', 'error')
-            return redirect(url_for('users'))
-        
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists.', 'error')
-        elif User.query.filter_by(email=email).first():
-             flash('Email already registered.', 'error')
-        else:
-            # New users are NOT verified by default, must verify on first login
-            new_user = User(username=username, email=email, role='staff', permissions=",".join(perms), is_verified=False)
-            new_user.set_password(password)
-            db.session.add(new_user)
-            db.session.commit()
-            flash('User created successfully. They verify email on first login.', 'success')
-            
-        return redirect(url_for('users'))
-
-    @app.route('/users/delete/<int:id>')
-    @login_required
-    def delete_user(id):
-        if current_user.role != 'master':
-             return redirect(url_for('dashboard'))
-        
-        user = User.query.get_or_404(id)
-        if user.role == 'master':
-            flash('Cannot delete master admin.', 'error')
-        else:
-            db.session.delete(user)
-            db.session.commit()
-            flash('User deleted.', 'success')
-        return redirect(request.args.get('next') or url_for('users'))
-
-    @app.route('/users/update_permissions', methods=['POST'])
-    @login_required
-    def update_user_permissions():
-        if current_user.role != 'master':
-             return redirect(url_for('dashboard'))
-             
-        user_id = request.form.get('user_id')
-        user = User.query.get_or_404(user_id)
-        
-        if user.role != 'master':
-            perms = request.form.getlist('permissions')
-            email = request.form.get('email')
-            
-            # Check email uniqueness if changed
-            if email and email != user.email and User.query.filter_by(email=email).first():
-                flash('Email already taken.', 'error')
-                return redirect(url_for('users'))
-
-            user.permissions = ",".join(perms)
-            user.email = email
-            
-            # Optional: Password Reset
-            new_pass = request.form.get('new_password')
-            if new_pass:
-                user.set_password(new_pass)
-                
-            db.session.commit()
-            flash('User updated successfully.', 'success')
-            
-        return redirect(url_for('users'))
 
     # --- Protected Routes ---
     
 
 
     @app.route('/settings', methods=['GET', 'POST'])
-    @login_required
     def settings():
-        if not current_user.has_permission('manage_settings'):
-            flash('Access Denied: You do not have permission to view Settings.', 'error')
-            return redirect(url_for('dashboard'))
-
-        staff_members = User.query.all() if current_user.role == 'master' else []
+        staff_members = []
         shop = ShopProfile.query.first()
         if not shop:
              shop = ShopProfile() # Temporary object for template if none exists
@@ -379,14 +47,10 @@ def register_routes(app):
         
         return render_template('settings.html', active_page='settings', staff_members=staff_members, shop=shop)
 
+
     @app.route('/settings/update_profile', methods=['POST'])
-    @login_required
-    # @permission_required('manage_settings') # Apply manual check to redirect better
     def update_shop_profile():
-        # Strict check for Master Admin as requested
-        if current_user.role != 'master':
-            flash('Access Denied: Only Master Admin can update Shop Profile.', 'error')
-            return redirect(url_for('settings'))
+
             
         shop = ShopProfile.query.first()
         if not shop:
@@ -426,33 +90,15 @@ def register_routes(app):
         flash('Shop profile updated!', 'success')
         return redirect(url_for('settings'))
 
-    @app.route('/settings/admin/add', methods=['POST'])
-    @login_required
-    @master_required
-    def add_admin():
-        username = request.form.get('username')
-        password = request.form.get('password')
-        
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists.', 'error')
-            return redirect(url_for('settings'))
-            
-        new_admin = User(username=username, role='staff', created_by=current_user.id)
-        new_admin.set_password(password)
-        db.session.add(new_admin)
-        db.session.commit()
-        flash(f'Admin {username} added successfully.', 'success')
-        return redirect(url_for('settings'))
+
 
     @app.route('/custom_categories')
-    @login_required
     def custom_categories():
         male_categories = Category.query.filter_by(gender='male').all()
         female_categories = Category.query.filter_by(gender='female').all()
         return render_template('custom_categories.html', male_categories=male_categories, female_categories=female_categories, active_page='custom_categories')
 
     @app.route('/settings/category/add', methods=['POST'])
-    @login_required
     def add_category():
         try:
             name = request.form.get('name', '').strip().title() # Force Title Case
@@ -472,7 +118,6 @@ def register_routes(app):
         return redirect(url_for('custom_categories'))
 
     @app.route('/settings/category/delete/<int:id>')
-    @login_required
     def delete_category(id):
         try:
             cat = Category.query.get_or_404(id)
@@ -495,7 +140,6 @@ def register_routes(app):
 
 
     @app.route('/dashboard')
-    @login_required
     def dashboard():
         from datetime import date, timedelta
         from sqlalchemy import func
@@ -612,7 +256,7 @@ def register_routes(app):
         # SQLite-specific query for monthly grouping - keeping as is (efficient enough for 6 rows)
         from sqlalchemy import text
         graph_data = db.session.query(
-            func.to_char(Customer.created_date, 'MM-YYYY').label('month'),
+            func.strftime('%m-%Y', Customer.created_date).label('month'),
             func.count(Customer.id)
         ).group_by('month').order_by(func.min(Customer.created_date)).limit(6).all()
         
@@ -668,7 +312,6 @@ def register_routes(app):
         return render_template('dashboard.html', stats=stats, todays_orders=todays_orders, urgent_reminders=urgent_reminders, upcoming_deliveries=upcoming_deliveries, top_customers=top_customers, active_page='dashboard')
 
     @app.route('/customers', methods=['GET', 'POST'])
-    @login_required
     def customers():
         if request.method == 'POST':
             # Quick Add Customer Logic
@@ -819,7 +462,6 @@ def register_routes(app):
         return render_template('customers.html', customers=customers_list, pagination=pagination, month_nav=month_nav, active_page='customers')
 
     @app.route('/api/measurement/<int:id>')
-    @login_required
     def api_measurement_single(id):
         meas = Measurement.query.get_or_404(id)
         return jsonify({
@@ -830,7 +472,6 @@ def register_routes(app):
         })
 
     @app.route('/api/customer/<int:id>')
-    @login_required
     def api_customer_details(id):
         customer = Customer.query.get_or_404(id)
         
@@ -857,7 +498,6 @@ def register_routes(app):
         })
 
     @app.route('/customer/<int:id>/measurement', methods=['GET', 'POST'])
-    @login_required
     def measurement(id):
         customer = Customer.query.get_or_404(id)
         # Fetch categories based on gender (or all if not specified, but usually gender specific)
@@ -937,20 +577,21 @@ def register_routes(app):
                         total_amt=total, 
                         advance=advance,
                         balance=total - advance, 
-                        payment_mode=payment_mode,
-                        created_by=current_user.id
+                        payment_mode=payment_mode
                     )
                     # Note: We are now setting Total Amt if provided.
                     
                     db.session.add(new_order)
                     db.session.commit()
                     
+                    
                     # Log History
-                    History.log(current_user.id, 'Create', 'Order', new_order.id, f"Created Order {new_order.id} for {customer.name} (Items: {item_name})")
+                    # History removed
                     db.session.commit()
 
                     flash('Measurement saved and Order created successfully!', 'success')
-                    return redirect(url_for('view_invoice', id=new_order.id))
+                    # Redirect to customers instead of invoice as per user request
+                    return redirect(url_for('customers'))
 
                 except Exception as e:
                     print(e)
@@ -961,7 +602,6 @@ def register_routes(app):
         return render_template('measurement.html', customer=customer, categories=categories, active_page='customers', reuse_measurement=reuse_measurement)
 
     @app.route('/measurements')
-    @login_required
     def measurements():
         from sqlalchemy.orm import joinedload
         from sqlalchemy import tuple_
@@ -1031,15 +671,13 @@ def register_routes(app):
         return render_template('measurements.html', measurements=measurements_list, pagination=pagination, month_nav=month_nav, active_page='measurements')
 
     @app.route('/customer/<int:id>/history')
-    @login_required
     def customer_measurement_history(id):
         customer = Customer.query.get_or_404(id)
         # Fetch all measurements for this customer, sorted by newest first
         measurements = Measurement.query.filter_by(customer_id=id).order_by(Measurement.date.desc()).all()
-        return render_template('measurement_history.html', customer=customer, measurements=measurements)
+        return render_template('measurement_history.html', customer=customer, measurements=measurements, active_page='customers')
 
     @app.route('/orders', methods=['GET'])
-    @login_required
     def orders():
         from datetime import datetime
         import calendar
@@ -1125,7 +763,6 @@ def register_routes(app):
         return render_template('orders.html', orders=orders_list, pagination=pagination, month_nav=month_nav, active_page='orders')
 
     @app.route('/orders/update_details', methods=['POST'])
-    @login_required
     def orders_update_details():
         order_id = request.form.get('order_id')
         
@@ -1166,7 +803,8 @@ def register_routes(app):
                  order.payment_status = 'Pending'
     
             # Log Update
-            History.log(current_user.id, 'Edit', 'Order', order.id, f"Updated Order #{order.id}: Status={status}, Paid={advance}/{total}")
+            # Log Update
+            # History removed
 
             db.session.commit()
             flash('Order details updated successfully!', 'success')
@@ -1183,11 +821,7 @@ def register_routes(app):
 
 
     @app.route('/delete-customer/<int:id>', methods=['POST'])
-    @login_required
     def delete_customer(id):
-        if not current_user.has_permission('delete_customer') and current_user.role != 'master':
-            flash('Permission denied from Route', 'error')
-            return redirect(url_for('customers'))
             
         customer = Customer.query.get_or_404(id)
         try:
@@ -1202,7 +836,8 @@ def register_routes(app):
             db.session.delete(customer)
             
             # Log
-            History.log(current_user.id, 'Delete', 'Customer', cust_id, f"Deleted Customer: {cust_name}")
+            # Log
+            # History removed
             
             db.session.commit()
             flash('Customer deleted successfully.', 'success')
@@ -1213,7 +848,6 @@ def register_routes(app):
         return redirect(url_for('customers'))
 
     @app.route('/delete/order/<int:id>', methods=['POST'])
-    @login_required
     def delete_order(id):
         order = Order.query.get_or_404(id)
         try:
@@ -1223,7 +857,8 @@ def register_routes(app):
             db.session.delete(order)
             
             # Log
-            History.log(current_user.id, 'Delete', 'Order', oid, f"Deleted Order #{oid} for {cust_name}")
+            # Log
+            # History removed
             
             db.session.commit()
             flash('Order deleted successfully.', 'success')
@@ -1238,7 +873,6 @@ def register_routes(app):
     
     @app.route('/bills')
     @app.route('/bills')
-    @login_required
     def bills():
         from datetime import datetime
         import calendar
@@ -1308,7 +942,6 @@ def register_routes(app):
         return render_template('bills.html', bills=bills_list, pagination=pagination, month_nav=month_nav, active_page='bills')
     
     @app.route('/bills/update', methods=['POST'])
-    @login_required
     def bills_update():
         order_id = request.form.get('order_id')
         total = round(float(request.form.get('total_amt') or 0), 2)
@@ -1343,18 +976,18 @@ def register_routes(app):
 
     # --- Additional Features (Reminders, Search, Invoices) ---
     @app.route('/settings/reset_data', methods=['POST'])
-    @login_required
-    @master_required
     def reset_data():
         try:
             # 1. Clear Database Tables (Order Matters for FKs)
             # Delete History first as it references everything
-            if 'History' in globals():
-                 db.session.query(History).delete()
+            # History removed
+            
             
             # Delete Reminders
-            if 'Reminder' in globals():
-                 db.session.query(Reminder).delete()
+            try:
+                db.session.query(Reminder).delete()
+            except:
+                pass # Ignore if table issue
 
             # Delete Transactional Data
             db.session.query(Order).delete()
@@ -1386,7 +1019,6 @@ def register_routes(app):
         return redirect(url_for('settings'))
 
     @app.route('/reminders')
-    @login_required
     def reminders():
         from datetime import date, timedelta
         
@@ -1416,7 +1048,6 @@ def register_routes(app):
         
 
     @app.route('/search')
-    @login_required
     def search():
         query = request.args.get('q', '').strip()
         if not query:
@@ -1456,7 +1087,6 @@ def register_routes(app):
         return render_template('invoice.html', order=order, shop=shop, is_public=True)
 
     @app.route('/invoice/<int:id>')
-    @login_required
     def view_invoice(id):
         order = Order.query.get_or_404(id)
         from models import ShopProfile
@@ -1469,7 +1099,6 @@ def register_routes(app):
         return render_template('invoice.html', order=order, shop=shop, public_url=public_url)
 
     @app.route('/invoice/<int:id>/download')
-    @login_required
     def download_invoice(id):
         import os
         from flask import send_file
@@ -1547,7 +1176,6 @@ def register_routes(app):
             return jsonify({'success': False, 'message': str(e)}), 500
         
     @app.route('/export_csv')
-    @login_required
     def export_csv():
         import csv
         import io
@@ -1588,7 +1216,6 @@ def register_routes(app):
         return response
 
     @app.route('/settings/export_data', methods=['POST'])
-    @login_required
     def export_custom_data():
         import csv
         import io
@@ -1659,7 +1286,6 @@ def register_routes(app):
         return output
 
     @app.route('/api/customer/<int:id>')
-    @login_required
     def get_customer_details(id):
         # Optimized query with joined load for measurements
         customer = Customer.query.options(db.joinedload(Customer.measurements).joinedload(Measurement.category)).get_or_404(id)
@@ -1684,3 +1310,15 @@ def register_routes(app):
             'orders_count': len(customer.orders),
             'measurements': measurements_data
         })
+
+    @app.route('/delete/measurement/<int:id>', methods=['POST'])
+    def delete_measurement(id):
+        m = Measurement.query.get_or_404(id)
+        cust_id = m.customer_id
+        try:
+            db.session.delete(m)
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Measurement deleted successfully'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'message': str(e)}), 500

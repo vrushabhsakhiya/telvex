@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="page-header" style="margin-bottom: 2rem;">
-    <h2 style="font-size: 1.5rem; font-weight: 600;">Reminders & Activity</h2>
+    <h2 style="font-size: 1.5rem; font-weight: 600;">{{ t('reminders_activity') }}</h2>
 </div>
 
 <div class="grid-layout"
@@ -14,7 +14,7 @@
             <div class="card-title">
                 <i class="fa-solid fa-triangle-exclamation"
                     style="color: var(--danger-color); margin-right: 0.5rem;"></i>
-                Urgent / Today
+                {{ t('urgent_today') }}
             </div>
             <span
                 style="background: #FEE2E2; color: var(--danger-color); padding: 0.25rem 0.5rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">
@@ -47,7 +47,8 @@
                 </div>
             </div>
             {% else %}
-            <p style="text-align: center; color: var(--text-secondary); padding: 1rem;">No urgent deliveries.</p>
+            <p style="text-align: center; color: var(--text-secondary); padding: 1rem;">{{ t('no_urgent_deliveries') }}
+            </p>
             {% endfor %}
         </div>
     </div>
@@ -57,7 +58,7 @@
         <div class="card-header">
             <div class="card-title">
                 <i class="fa-solid fa-calendar-day" style="color: var(--warning-color); margin-right: 0.5rem;"></i>
-                Tomorrow
+                {{ t('tomorrow') }}
             </div>
             <span
                 style="background: #FFF7ED; color: var(--warning-color); padding: 0.25rem 0.5rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">
@@ -73,7 +74,7 @@
                     <div class="reminder-meta">
                         Order {{ order.id }} - {{ order.items[0].name if order.items else 'Items' }}
                         <br>
-                        <span style="color: var(--warning-color);">Due: Tomorrow</span>
+                        <span style="color: var(--warning-color);">{{ t('due_tomorrow') }}</span>
                     </div>
                 </div>
                 <div class="reminder-actions">
@@ -82,7 +83,8 @@
                 </div>
             </div>
             {% else %}
-            <p style="text-align: center; color: var(--text-secondary); padding: 1rem;">No deliveries tomorrow.</p>
+            <p style="text-align: center; color: var(--text-secondary); padding: 1rem;">{{ t('no_deliveries_tomorrow')
+                }}</p>
             {% endfor %}
         </div>
     </div>
@@ -93,7 +95,7 @@
             <div class="card-title">
                 <i class="fa-solid fa-circle-dollar-to-slot"
                     style="color: var(--primary-color); margin-right: 0.5rem;"></i>
-                Pending Payments
+                {{ t('pending_payments') }}
             </div>
             <span
                 style="background: #DBEAFE; color: var(--primary-color); padding: 0.25rem 0.5rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">
@@ -109,7 +111,7 @@
                     <div class="reminder-meta">
                         Order {{ order.id }} ({{ order.created_at.strftime('%d-%b') }})
                         <br>
-                        <strong style="color: var(--danger-color);">Due: ₹{{ order.balance }}</strong>
+                        <strong style="color: var(--danger-color);">{{ t('due') }}: ₹{{ order.balance }}</strong>
                     </div>
                 </div>
                 <div class="reminder-actions">
@@ -118,7 +120,8 @@
                 </div>
             </div>
             {% else %}
-            <p style="text-align: center; color: var(--text-secondary); padding: 1rem;">No pending payments.</p>
+            <p style="text-align: center; color: var(--text-secondary); padding: 1rem;">{{ t('no_pending_payments') }}
+            </p>
             {% endfor %}
         </div>
     </div>

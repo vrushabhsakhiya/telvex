@@ -6,9 +6,9 @@
     <!-- Page Header -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <div>
-            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">Custom Categories</h2>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">Manage your measurement categories and app
-                preferences.</p>
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">{{ t('custom_categories') }}
+            </h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">{{ t('manage_categories_info') }}</p>
         </div>
     </div>
 
@@ -20,11 +20,11 @@
                     style="width: 32px; height: 32px; background: #E0E7FF; color: #4338CA; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                     <i class="fa-solid fa-person"></i>
                 </div>
-                <h3 style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">Gent's Wear</h3>
+                <h3 style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">{{ t('gents_wear') }}</h3>
             </div>
             <button class="btn" onclick="openAddCategoryModal('male')"
                 style="background: #4338CA; color: white; border: none; padding: 0.5rem 1rem; font-size: 0.9rem; border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem; transition: opacity 0.2s;">
-                <i class="fa-solid fa-plus"></i> Add Category
+                <i class="fa-solid fa-plus"></i> {{ t('add_category') }}
             </button>
         </div>
 
@@ -66,7 +66,7 @@
                 style="grid-column: 1/-1; padding: 2rem; border: 2px dashed #E0E7FF; background: #EEF2FF; border-radius: 0.5rem; text-align: center; color: #4338CA;">
                 <i class="fa-solid fa-circle-info"
                     style="margin-bottom: 0.5rem; display: block; font-size: 1.5rem; opacity: 0.5;"></i>
-                No Gent's items added yet. Click "Add Category" to start.
+                {{ t('no_gents_items') }}
             </div>
             {% endfor %}
         </div>
@@ -80,11 +80,12 @@
                     style="width: 32px; height: 32px; background: #FCE7F3; color: #BE185D; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                     <i class="fa-solid fa-person-dress"></i>
                 </div>
-                <h3 style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">Ladies' Wear</h3>
+                <h3 style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">{{ t('ladies_wear') }}
+                </h3>
             </div>
             <button class="btn" onclick="openAddCategoryModal('female')"
                 style="background: #BE185D; color: white; border: none; padding: 0.5rem 1rem; font-size: 0.9rem; border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem; transition: opacity 0.2s;">
-                <i class="fa-solid fa-plus"></i> Add Category
+                <i class="fa-solid fa-plus"></i> {{ t('add_category') }}
             </button>
         </div>
 
@@ -127,7 +128,7 @@
                 style="grid-column: 1/-1; padding: 2rem; border: 2px dashed #FCE7F3; background: #FFF1F2; border-radius: 0.5rem; text-align: center; color: #BE185D;">
                 <i class="fa-solid fa-circle-info"
                     style="margin-bottom: 0.5rem; display: block; font-size: 1.5rem; opacity: 0.5;"></i>
-                No Ladies' items added yet. Click "Add Category" to start.
+                {{ t('no_ladies_items') }}
             </div>
             {% endfor %}
         </div>
@@ -143,13 +144,14 @@
             <h3 id="modalTitle"
                 style="font-size: 1.5rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 0.75rem;">
                 <!-- Icon will be injected -->
-                <span>Add New Category</span>
+                <span>{{ t('add_new_category') }}</span>
             </h3>
             <button onclick="closeAddCategoryModal()"
                 style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary); opacity: 0.7;">&times;</button>
         </div>
 
         <form action="{{ url_for('add_category') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <!-- Gender Selection (Hidden but togglable if needed, currently auto-set) -->
             <div class="form-group" style="display: none;">
                 <input type="radio" name="gender" id="genderMale" value="male">
@@ -157,27 +159,20 @@
             </div>
 
             <div class="form-group" style="margin-bottom: 1.5rem;">
-                <label
-                    style="font-weight: 500; margin-bottom: 0.5rem; display: block; color: var(--text-primary); font-size: 0.95rem;">Category
-                    Name</label>
-                <div style="position: relative;">
-                    <i class="fa-solid fa-tag"
-                        style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #9CA3AF;"></i>
-                    <input type="text" name="name" placeholder="e.g. Waistcoat, Blazer" required autofocus
-                        style="width: 100%; padding: 0.75rem 0.75rem 0.75rem 2.5rem; border: 1px solid #D1D5DB; border-radius: 0.375rem; background: #FFFFFF; color: var(--text-primary); font-size: 1rem; transition: box-shadow 0.2s, border-color 0.2s;">
-                </div>
-                <small
-                    style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem; display: block;">Name
-                    of the clothing item (e.g. Shirt, Pant)</small>
+                <label {{ t('category_name') }}</label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-tag"
+                            style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #9CA3AF;"></i>
+                        <input type="text" name="name" placeholder="e.g. Waistcoat, Blazer" required autofocus
+                            style="width: 100%; padding: 0.75rem 0.75rem 0.75rem 2.5rem; border: 1px solid #D1D5DB; border-radius: 0.375rem; background: #FFFFFF; color: var(--text-primary); font-size: 1rem; transition: box-shadow 0.2s, border-color 0.2s;">
+                    </div>
+                    <small {{ t('category_help') }}</small>
             </div>
 
             <div class="form-group" style="margin-bottom: 2rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <label style="font-weight: 500; color: var(--text-primary); font-size: 0.95rem;">Measurement
-                        Fields</label>
-                    <span
-                        style="font-size: 0.75rem; color: var(--text-secondary); background: #F3F4F6; padding: 2px 8px; border-radius: 4px;">What
-                        do you measure?</span>
+                    {{ t('measurement_fields') }}</label>
+                    <span {{ t('what_do_you_measure') }}</span>
                 </div>
 
                 <div class="field-builder"
@@ -188,7 +183,7 @@
                             style="flex: 1; padding: 0.6rem 0.8rem; border: 1px solid #D1D5DB; border-radius: 0.375rem; font-size: 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
                         <button type="button" id="btnAddField" onclick="addFieldTag()"
                             style="padding: 0 1.25rem; border-radius: 0.375rem; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                            <i class="fa-solid fa-plus"></i> Add
+                            <i class="fa-solid fa-plus"></i> {{ t('add') }}
                         </button>
                     </div>
 
@@ -199,7 +194,7 @@
                             style="width: 100%; text-align: center; color: #9CA3AF; font-size: 0.85rem; padding: 0.5rem;">
                             <i class="fa-solid fa-arrow-up"
                                 style="margin-bottom: 0.25rem; display: block; opacity: 0.5;"></i>
-                            Type above and press Enter
+                            {{ t('type_above_enter') }}
                         </div>
                     </div>
                 </div>
@@ -210,11 +205,11 @@
                 style="padding-top: 1rem; border-top: 1px solid #E5E7EB; display: flex; justify-content: flex-end; gap: 1rem;">
                 <button type="button" class="btn" onclick="closeAddCategoryModal()"
                     style="border: 1px solid #D1D5DB; background: white; color: #374151; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 500; cursor: pointer; transition: background 0.1s;">
-                    Cancel
+                    {{ t('cancel') }}
                 </button>
                 <button type="submit" id="btnSaveCategory" class="btn"
                     style="padding: 0.75rem 2rem; border-radius: 0.5rem; font-weight: 600; color: white; border: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.1s;">
-                    Add Category
+                    {{ t('add_category') }}
                 </button>
             </div>
         </form>
@@ -258,15 +253,18 @@
 </style>
 
 <script>
-    const modal = document.getElementById('addCategoryModal');
-    let fields = [];
-    let currentGender = 'male'; // State to track current theme
+    // Variables
+    let catFields = [];
+    let currentCatGender = 'male';
 
     function openAddCategoryModal(gender) {
+        const modal = document.getElementById('addCategoryModal');
+        if (!modal) return;
+
         // Reset and Show with Animation
-        fields = [];
-        currentGender = gender;
-        renderFields();
+        catFields = [];
+        currentCatGender = gender;
+        renderCatFields();
         document.getElementById('fieldsJson').value = '[]';
         document.getElementById('newFieldInput').value = '';
 
@@ -285,33 +283,43 @@
 
         // Auto-set gender and Dynamic Theming
         if (gender === 'male') {
-            document.getElementById('genderMale').checked = true;
+            const maleRadio = document.getElementById('genderMale');
+            if (maleRadio) maleRadio.checked = true;
 
             // Themes: Indigo (Gent's)
             titleEl.innerHTML = `<i class="fa-solid fa-shirt"></i> Add Gent's Wear Category`;
             titleEl.style.color = '#4338CA';
-            // headerEl.style.background = '#FFFFFF'; 
-            saveBtn.style.background = '#4338CA';
-            addBtn.style.background = '#4338CA';
-            addBtn.style.color = 'white';
+            if (saveBtn) saveBtn.style.background = '#4338CA';
+            if (addBtn) {
+                addBtn.style.background = '#4338CA';
+                addBtn.style.color = 'white';
+            }
 
         } else if (gender === 'female') {
-            document.getElementById('genderFemale').checked = true;
+            const femaleRadio = document.getElementById('genderFemale');
+            if (femaleRadio) femaleRadio.checked = true;
 
             // Themes: Pink (Ladies')
             titleEl.innerHTML = `<i class="fa-solid fa-person-dress"></i> Add Ladies' Wear Category`;
             titleEl.style.color = '#BE185D';
-            // headerEl.style.background = '#FFFFFF';
-            saveBtn.style.background = '#BE185D';
-            addBtn.style.background = '#BE185D';
-            addBtn.style.color = 'white';
+            if (saveBtn) saveBtn.style.background = '#BE185D';
+            if (addBtn) {
+                addBtn.style.background = '#BE185D';
+                addBtn.style.color = 'white';
+            }
         }
 
         // Focus input
-        setTimeout(() => document.querySelector('input[name="name"]').focus(), 100);
+        setTimeout(() => {
+            const nameInput = document.querySelector('input[name="name"]');
+            if (nameInput) nameInput.focus();
+        }, 100);
     }
 
     function closeAddCategoryModal() {
+        const modal = document.getElementById('addCategoryModal');
+        if (!modal) return;
+
         modal.classList.remove('active');
         setTimeout(() => {
             modal.style.display = 'none';
@@ -321,9 +329,9 @@
     function addFieldTag() {
         const input = document.getElementById('newFieldInput');
         const val = input.value.trim();
-        if (val && !fields.includes(val)) {
-            fields.push(val);
-            renderFields();
+        if (val && !catFields.includes(val)) {
+            catFields.push(val);
+            renderCatFields();
             input.value = '';
             input.focus();
         }
@@ -331,24 +339,29 @@
     }
 
     // Allow Enter key to add field
-    document.getElementById('newFieldInput').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            addFieldTag();
-        }
-    });
+    const newFieldInput = document.getElementById('newFieldInput');
+    if (newFieldInput) {
+        newFieldInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addFieldTag();
+            }
+        });
+    }
 
     function removeField(index) {
-        fields.splice(index, 1);
-        renderFields();
+        catFields.splice(index, 1);
+        renderCatFields();
         updateJson();
     }
 
-    function renderFields() {
+    function renderCatFields() {
         const container = document.getElementById('fieldTags');
+        if (!container) return;
+
         container.innerHTML = '';
 
-        if (fields.length === 0) {
+        if (catFields.length === 0) {
             container.innerHTML = '<div style="width: 100%; text-align: center; color: #9CA3AF; font-size: 0.85rem; padding: 0.5rem;"><i class="fa-solid fa-arrow-up" style="margin-bottom: 0.25rem; display: block; opacity: 0.5;"></i>Type above and press Enter</div>';
             return;
         }
@@ -357,12 +370,12 @@
         let bg = '#E0E7FF'; // Default Male
         let txt = '#4338CA';
 
-        if (currentGender === 'female') {
+        if (currentCatGender === 'female') {
             bg = '#FCE7F3';
             txt = '#BE185D';
         }
 
-        fields.forEach((f, i) => {
+        catFields.forEach((f, i) => {
             const tag = document.createElement('span');
             tag.style.cssText = `background: ${bg}; color: ${txt}; padding: 0.35rem 0.75rem; border-radius: 99px; font-size: 0.85rem; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s;`;
             tag.innerHTML = `${f} <i class="fa-solid fa-xmark" onclick="removeField(${i})" style="cursor: pointer; opacity: 0.7;"></i>`;
@@ -372,9 +385,8 @@
     }
 
     function updateJson() {
-        document.getElementById('fieldsJson').value = JSON.stringify(fields);
+        const jsonInput = document.getElementById('fieldsJson');
+        if (jsonInput) jsonInput.value = JSON.stringify(catFields);
     }
-
-    // Close modal on click outside (handled by overlay onclick)
 </script>
 {% endblock %}

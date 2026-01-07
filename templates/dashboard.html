@@ -2,7 +2,7 @@
 
 {% block content %}
 <!-- Upper Row: Yearly & Key Stats -->
-<h3 style="margin-bottom: 1rem; color: var(--text-primary);">Yearly Overview</h3>
+<h3 style="margin-bottom: 1rem; color: var(--text-primary);">{{ t('yearly_overview') }}</h3>
 <div class="stats-grid">
     <!-- Card 1: Total Customers -->
     <div class="card stat-card">
@@ -27,13 +27,13 @@
         <h3>{{ t('pending_balance') }}</h3>
         <div class="stat-value">₹{{ "{:,.0f}".format(stats.pending_balance) }}</div>
         <div class="stat-trend warning">
-            <i class="fa-solid fa-circle-exclamation"></i> Total Outstanding
+            <i class="fa-solid fa-circle-exclamation"></i> {{ t('total_outstanding') }}
         </div>
     </div>
 
     <!-- Card 4: Pending Delivery (Total) -->
     <div class="card stat-card">
-        <h3>Pending Delivery</h3>
+        <h3>{{ t('pending_delivery') }}</h3>
         <div class="stat-value">{{ stats.pending_delivery }}</div>
         <div class="stat-trend warning">
             <i class="fa-solid fa-clock"></i> +{{ stats.delivery_today }} today
@@ -42,32 +42,32 @@
 </div>
 
 <!-- Lower Row: Monthly Report -->
-<h3 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--text-primary);">Monthly Report</h3>
+<h3 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--text-primary);">{{ t('monthly_report') }}</h3>
 <div class="stats-grid">
     <!-- Card 1: Monthly Customers -->
     <div class="card stat-card">
-        <h3>Monthly Customers</h3>
+        <h3>{{ t('monthly_customers') }}</h3>
         <div class="stat-value">{{ stats.monthly_customers }}</div>
         <div class="stat-trend positive">
-            <i class="fa-solid fa-user-plus"></i> This Month
+            <i class="fa-solid fa-user-plus"></i> {{ t('this_month') }}
         </div>
     </div>
 
     <!-- Card 2: Monthly Pending -->
     <div class="card stat-card">
-        <h3>Monthly Pending</h3>
+        <h3>{{ t('monthly_pending') }}</h3>
         <div class="stat-value">₹{{ "{:,.0f}".format(stats.monthly_pending) }}</div>
         <div class="stat-trend warning">
-            <i class="fa-solid fa-clock"></i> This Month
+            <i class="fa-solid fa-clock"></i> {{ t('this_month') }}
         </div>
     </div>
 
     <!-- Card 3: Monthly Revenue -->
     <div class="card stat-card">
-        <h3>Monthly Revenue</h3>
+        <h3>{{ t('monthly_revenue') }}</h3>
         <div class="stat-value">₹{{ "{:,.0f}".format(stats.monthly_revenue) }}</div>
         <div class="stat-trend positive">
-            <i class="fa-solid fa-indian-rupee-sign"></i> This Month
+            <i class="fa-solid fa-indian-rupee-sign"></i> {{ t('this_month') }}
         </div>
     </div>
 
@@ -77,7 +77,7 @@
             <h3>{{ t('due_today') }}</h3>
             <div class="stat-value">{{ stats.delivery_today }}</div>
             <div class="stat-trend warning">
-                <i class="fa-solid fa-truck-fast"></i> Due Today
+                <i class="fa-solid fa-truck-fast"></i> {{ t('due_today') }}
             </div>
         </div>
     </a>
@@ -88,7 +88,7 @@
 <div class="card" style="margin-bottom: 2rem; border-left: 5px solid var(--danger-color); margin-top: 2rem;">
     <div class="card-header" style="padding-bottom: 0.5rem; justify-content: flex-start; gap: 0.5rem;">
         <i class="fa-solid fa-bell" style="color: var(--danger-color);"></i>
-        <div class="card-title" style="color: var(--danger-color); font-size: 1rem;">Urgent Reminders ({{
+        <div class="card-title" style="color: var(--danger-color); font-size: 1rem;">{{ t('urgent_reminders') }} ({{
             urgent_reminders|length }})</div>
     </div>
     <div class="reminder-scroller" style="max-height: 150px; overflow-y: auto;">
@@ -107,7 +107,8 @@
             </div>
             <div>
                 <a href="{{ rem.link }}" class="btn btn-sm btn-outline"
-                    style="font-size: 0.75rem; border-color: var(--border-color); color: var(--text-primary);">View</a>
+                    style="font-size: 0.75rem; border-color: var(--border-color); color: var(--text-primary);">{{
+                    t('view') }}</a>
             </div>
         </div>
         {% endfor %}
@@ -121,7 +122,7 @@
     <!-- Upcoming Deliveries -->
     <div class="card">
         <div class="card-header">
-            <div class="card-title">Upcoming Deliveries (Next 7 Days)</div>
+            <div class="card-title">{{ t('upcoming_deliveries') }} ({{ t('next_7_days') }})</div>
         </div>
         <div class="list-group" style="display: flex; flex-direction: column; gap: 0.75rem;">
             {% for order in upcoming_deliveries %}
@@ -140,7 +141,8 @@
                 </div>
             </div>
             {% else %}
-            <div style="color: var(--text-secondary); text-align: center; padding: 1rem;">No upcoming deliveries.</div>
+            <div style="color: var(--text-secondary); text-align: center; padding: 1rem;">{{ t('no_upcoming_deliveries')
+                }}</div>
             {% endfor %}
         </div>
     </div>
@@ -148,7 +150,7 @@
     <!-- Top Customers -->
     <div class="card">
         <div class="card-header">
-            <div class="card-title">Top Customers</div>
+            <div class="card-title">{{ t('top_customers') }}</div>
         </div>
         <div class="list-group" style="display: flex; flex-direction: column; gap: 0.75rem;">
             {% for cust, spend in top_customers %}
@@ -167,7 +169,7 @@
                 <div style="font-weight: 600;">₹{{ "{:,.0f}".format(spend) }}</div>
             </div>
             {% else %}
-            <div style="color: var(--text-secondary); text-align: center; padding: 1rem;">No data yet.</div>
+            <div style="color: var(--text-secondary); text-align: center; padding: 1rem;">{{ t('no_data_yet') }}</div>
             {% endfor %}
         </div>
     </div>
@@ -177,7 +179,7 @@
 <!-- Bottom Row: Table -->
 <div class="card">
     <div class="card-header">
-        <div class="card-title">Today's Customers</div>
+        <div class="card-title">{{ t('today_customers') }}</div>
         <!-- <div>
             <button class="btn btn-outline btn-sm" style="border: 1px solid var(--border-color);">Export CSV</button>
             <button class="btn btn-primary btn-sm">
@@ -209,13 +211,13 @@
                     <td>{{ order.created_at.strftime('%I:%M %p') }}</td>
                     <td>
                         <button class="btn btn-sm btn-primary"
-                            onclick="window.location.href='{{ url_for('orders') }}';">View</button>
+                            onclick="window.location.href='{{ url_for('orders') }}';">{{ t('view') }}</button>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
                     <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
-                        No orders created today.
+                        {{ t('no_orders_today') }}
                     </td>
                 </tr>
                 {% endfor %}

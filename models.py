@@ -1,36 +1,9 @@
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from flask_mail import Mail
 
 db = SQLAlchemy()
 mail = Mail()
-
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256)) # Increased length
-    role = db.Column(db.String(20), default='staff') # 'master', 'staff'
-    permissions = db.Column(db.String(255), default='') # comma-separated
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-
-    # Forgot Password Fields
-    email = db.Column(db.String(120), unique=True, nullable=True)
-    is_verified = db.Column(db.Boolean, default=False)
-    reset_otp = db.Column(db.String(6), nullable=True)
-    reset_otp_expiry = db.Column(db.DateTime, nullable=True)
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-    def has_permission(self, perm):
-        if self.role == 'master':
-            return True
-        return perm in (self.permissions or '').split(',')
 
 class ShopProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -104,9 +77,6 @@ class Order(db.Model):
     trial_date = db.Column(db.Date)
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    
-    creator = db.relationship('User', backref='orders_created', lazy=True)
 
 class Reminder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -121,23 +91,3 @@ class Reminder(db.Model):
 
     customer_rel = db.relationship('Customer', backref='reminders')
     order_rel = db.relationship('Order', backref='reminders')
-
-class History(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    action_type = db.Column(db.String(50), nullable=False) # Create, Edit, Delete
-    target_type = db.Column(db.String(50), nullable=False) # Order, Customer, Bill
-    target_id = db.Column(db.Integer, nullable=True)
-    details = db.Column(db.Text, nullable=True) # Description of change
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
-    user = db.relationship('User', backref=db.backref('history', lazy=True))
-
-    @staticmethod
-    def log(user_id, action, target_type, target_id, details=None):
-        try:
-            log_entry = History(user_id=user_id, action_type=action, target_type=target_type, target_id=target_id, details=details)
-            db.session.add(log_entry)
-            # db.session.commit() # Relies on caller to commit
-        except Exception as e:
-            print(f"Logging failed: {e}")

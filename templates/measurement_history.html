@@ -6,7 +6,7 @@
         style="text-decoration: none; color: var(--text-secondary); margin-bottom: 0.5rem; display: inline-block;">
         <i class="fa-solid fa-arrow-left"></i> Back to Measurements
     </a>
-    <h2 style="font-size: 1.5rem; font-weight: 600;">Measurement History: {{ customer.name }}</h2>
+    <h2 style="font-size: 1.5rem; font-weight: 600;">{{ t('measurements_history') }}: {{ customer.name }}</h2>
 </div>
 
 <div class="card">
@@ -14,10 +14,10 @@
         <table>
             <thead>
                 <tr>
-                    <th>Date</th>
-                    <th>Category</th>
-                    <th>Measurements</th>
-                    <th>Remarks</th>
+                    <th>{{ t('date') }}</th>
+                    <th>{{ t('category') }}</th>
+                    <th>{{ t('measurements') }}</th>
+                    <th>{{ t('remarks') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -43,8 +43,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 2rem;">No past measurements found for this
-                        customer.</td>
+                    <td colspan="4" style="text-align: center; padding: 2rem;">{{ t('no_measurements_found') }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

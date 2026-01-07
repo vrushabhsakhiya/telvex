@@ -98,11 +98,17 @@ function openProfile(id) {
                                     <i class="fa-solid fa-note-sticky" style="margin-right: 5px;"></i> ${m.remarks}
                                 </div>` : ''}
                             
-                            <div>
+                            <div style="display: flex; gap: 0.5rem;">
                                 <button type="button" class="btn btn-primary" 
                                     onclick="window.location.href='/customer/${data.id}/measurement?reuse_id=${m.id}'" 
-                                    style="width: 100%; justify-content: center; padding: 0.75rem; font-size: 1rem; font-weight: 500;">
-                                    <i class="fa-solid fa-rotate-right" style="margin-right: 8px;"></i> Reuse for New Order
+                                    style="flex: 1; justify-content: center; padding: 0.75rem; font-size: 1rem; font-weight: 500;">
+                                    <i class="fa-solid fa-rotate-right" style="margin-right: 8px;"></i> Reuse
+                                </button>
+                                <button type="button" class="btn btn-outline"
+                                    onclick="deleteMeasurement('${m.id}', '${id}')"
+                                    style="border: 1px solid var(--danger-color); color: var(--danger-color); padding: 0.75rem 1rem;"
+                                    title="Delete Measurement">
+                                    <i class="fa-solid fa-trash"></i>
                                 </button>
                             </div>
                         `;
@@ -240,3 +246,31 @@ document.addEventListener('input', (e) => {
         }
     }
 });
+
+function deleteMeasurement(measureId, customerId) {
+    if (!confirm('Are you sure you want to delete this measurement? This cannot be undone.')) return;
+
+    // Get CSRF Token
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || document.querySelector('meta[name="csrf-token"]')?.content;
+
+    fetch(`/delete/measurement/${measureId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Refresh Profile
+                openProfile(customerId);
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('An error occurred.');
+        });
+}
